@@ -17,90 +17,39 @@ A small Streamlit app that takes an uploaded resume (PDF/DOCX/TXT), extracts tex
 Open PowerShell in the project folder (`d:\Resume Screen using NLP`) and run:
 
 ```powershell
-# create venv (one-time)
+# Resume Studio | Elevvo
+
+A local browser app for matching resumes with the job library and getting AI-powered CV feedback and coaching through Groq.
+
+## Setup on Windows
+
+In PowerShell from the project folder:
+
+```powershell
 python -m venv .venv
-
-# activate the venv (every new shell)
-.\.venv\Scripts\Activate
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.local.example .env.local
+notepad .env.local
 ```
 
-You should see `(.venv)` at the start of your prompt after activation.
+Paste a newly created Groq key after `GROQ_API_KEY=` in `.env.local`, save, and close Notepad. Do not paste API keys into source code or commit `.env.local`.
 
-## Install required packages
-With the virtual environment active, run:
+Start the app:
 
 ```powershell
-pip install -r .\requirements.txt
+python -m uvicorn app:app --host 127.0.0.1 --port 8000
 ```
 
-Notes:
-- If `sentence-transformers` installs PyTorch and you prefer CPU-only, pip will install a CPU-compatible wheel automatically in most cases. If you need a specific PyTorch build, follow the instructions at https://pytorch.org.
-- After installing packages, download the spaCy English model:
+Open `http://127.0.0.1:8000`. The Groq host (`https://api.groq.com`) and model (`openai/gpt-oss-120b`) are configured in `app.py`; the SDK adds its `/openai/v1/chat/completions` route. The AI status in the sidebar confirms whether the local key was loaded. Restart the app after changing `.env.local`.
 
-```powershell
-python -m spacy download en_core_web_sm
-```
+## How it works
 
-## Files you must have
-- `Dataset/job_title_des.csv` — make sure this file exists and contains columns `Job Title` and `Job Description`.
-- `job_embeddings.npy` — if you don't have precomputed embeddings, you'll need to compute them using the same SentenceTransformer model (`all-MiniLM-L6-v2`) used by the app. See the `data_prep_visualization.ipynb` for hints.
+- Upload a PDF, DOCX, or TXT resume to get the top five semantic matches from the local job library.
+- Request a CV review or ask follow-up questions in the coach. Resume text is sent to Groq only for these explicit AI actions.
+- The resume is held in server memory for up to one hour and is not written to disk.
+- Local job data must include `Dataset/job_title_des.csv` with `Job Title` and `Job Description` columns and a row-aligned `job_embeddings.npy` generated using `all-MiniLM-L6-v2`.
+- The embedding model may download the first time a resume is analyzed.
 
-## Run the app (PowerShell)
+This configuration is intended for local use. Do not expose the development server to a network without adding authentication and HTTPS.
 
-```powershell
-# from project root
-.\.venv\Scripts\Activate    # if not already active
-streamlit run .\app.py
-```
-
-This will open Streamlit in your browser (or show a local URL in the terminal).
-
-## Quick usage
-- Upload a resume (PDF/DOCX/TXT) using the file uploader.
-- Wait for analysis — the app computes an embedding for the resume and compares it to precomputed job embeddings.
-- The top 5 matches are displayed as cards showing a percentage match, job title, a short snippet, and matched skill badges.
-
-## Troubleshooting
-- If you see an error about missing `en_core_web_sm`, run: `python -m spacy download en_core_web_sm`.
-- If `job_embeddings.npy` is missing, create embeddings using the `sentence-transformers` model and save as `job_embeddings.npy` in the project root.
-- If Streamlit fails to start, ensure you're running `streamlit run` from the project directory and that the venv's Python is active.
-
-## Customization
-- Colors and small UI tweaks are defined in `app.py` under the branding section — change `PRIMARY`, `ACCENT`, and `BG` variables to adjust look-and-feel.
-
-## License
-This repository contains example code. Add a license file if you want to share or publish this project.
-
----
-
-If you'd like, I can also:
-- Pin exact package versions into `requirements.txt` (recommended for reproducibility).
-- Add a small script to regenerate `job_embeddings.npy` from `Dataset/job_title_des.csv`.# Data preparation and visualization notebook
-
-This workspace contains a Jupyter notebook `notebooks/data_prep_visualization.ipynb` which:
-
-- Loads CSV datasets from the `Dataset/` folder
-- Performs text preprocessing (cleaning, tokenization, stopword removal, lemmatization)
-- Runs EDA and visualizations (word counts, wordcloud, n-grams, length distributions)
-- Computes TF-IDF, reduces dimensionality (PCA, t-SNE), and visualizes embeddings
-- Trains a simple baseline and logistic regression classifier (if a suitable target column exists)
-- Saves artifacts (TF-IDF, PCA, model pipeline) to `artifacts/`
-
-How to run
-
-1. Create a Python environment and install dependencies:
-
-```powershell
-python -m venv .venv; .\.venv\Scripts\Activate.ps1; pip install -r requirements.txt
-```
-
-2. Start JupyterLab or Jupyter Notebook and open `notebooks/data_prep_visualization.ipynb`:
-
-```powershell
-jupyter lab
-```
-
-Notes
-
-- The notebook auto-detects a text column like `Resume`, `text`, or `description`. If your data uses a different column name, edit the cell that sets `text_col`.
-- Outputs (models and vectorizers) are written to `artifacts/` in the project root.
