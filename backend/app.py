@@ -12,8 +12,7 @@ import numpy as np
 import pandas as pd
 from docx import Document
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from groq import APIConnectionError, APIStatusError, AuthenticationError, Groq, PermissionDeniedError, RateLimitError
 from pydantic import BaseModel, Field
@@ -23,8 +22,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
 load_dotenv(BASE_DIR / ".env.local")
+load_dotenv(BASE_DIR.parent / ".env.local")
 MODEL_NAME = "all-MiniLM-L6-v2"
 GROQ_API_URL = "https://api.groq.com"
 GROQ_MODEL_ID = "openai/gpt-oss-120b"
@@ -43,7 +42,18 @@ SKILLS = [
 sessions: dict[str, dict] = {}
 
 app = FastAPI(title="Resume Studio", docs_url=None, redoc_url=None)
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
 
 
 @lru_cache(maxsize=1)
@@ -142,11 +152,6 @@ def ask_ai(messages: list[dict]) -> str:
         raise HTTPException(status_code=502, detail=f"Groq returned an API error (status {exc.status_code}). Check model access and request settings.") from exc
     except APIConnectionError as exc:
         raise HTTPException(status_code=502, detail="Could not connect to Groq. Check your internet connection and retry.") from exc
-
-
-@app.get("/")
-def home():
-    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get("/api/health")

@@ -3,6 +3,7 @@ const state = {
   sessionId: null,
   chat: [],
 };
+const API_BASE_URL = (window.RESUME_API_BASE_URL || "").replace(/\/+$/, "");
 
 const elements = Object.fromEntries([
   "resume-file", "drop-zone", "drop-title", "drop-meta", "analyze-button", "upload-status",
@@ -26,7 +27,7 @@ function showToast(message) {
 }
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch(path, options);
+  const response = await fetch(`${API_BASE_URL}${path}`, options);
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.detail || `Request failed (${response.status}).`);
   return data;
@@ -194,7 +195,7 @@ async function sendChat(event) {
       body: JSON.stringify({
         session_id: state.sessionId,
         message,
-        history: state.chat.slice(0, -1),
+        history: state.chat.slice(-11, -1),
       }),
     });
     loading.remove();
@@ -234,6 +235,6 @@ apiRequest("/api/health")
   .then((health) => {
     elements["key-status"].textContent = health.ai_configured
       ? "Groq AI is ready. Reviews and chats are available."
-      : "Add a newly rotated GROQ_API_KEY to .env.local, then restart the app.";
+      : "Groq AI is not configured on the API service.";
   })
   .catch(() => showToast("Could not reach the app service. Refresh the page or restart the server."));
