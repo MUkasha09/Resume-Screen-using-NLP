@@ -4,18 +4,18 @@ Resume Studio matches PDF, DOCX, and TXT resumes to the local job library and of
 
 ## Project structure
 
-- `backend/` — FastAPI API, resume processing, job data, and the Render Docker deployment.
+- `backend/` — FastAPI API, resume processing, job data, and Render deployment configuration.
 - `frontend/` — static web app and its Vercel build/deployment configuration.
 
 The frontend and API are deployed separately. Resume text is embedded locally by the API and sent to Groq only when the user requests a review or chat reply.
 
 ## Deploy the backend to Render
 
-1. In Render, create a **Blueprint** from this repository. Render reads the root [`render.yaml`](./render.yaml), which configures the `backend/` Docker service and `/api/health` health check.
+1. In Render, create a **Blueprint** from this repository. Render reads the root [`render.yaml`](./render.yaml), which configures a native Python web service using the `backend/` directory and `/api/health` health check.
 2. Set `GROQ_API_KEY` in the service's environment settings. Keep it in Render; never put it in the frontend or commit it.
 3. Set `CORS_ORIGINS` to the exact frontend origin, for example `https://your-app.vercel.app`. Add any custom or preview origins you want to allow, separated by commas and without trailing slashes.
 
-The container listens on Render's `PORT`. The first resume analysis may take longer while `all-MiniLM-L6-v2` downloads. Allow enough memory for PyTorch and the model (at least 2 GB recommended), and ensure the service can reach Hugging Face.
+Render installs `backend/requirements.txt` and starts Uvicorn on Render's `PORT`. The first resume analysis may take longer while `all-MiniLM-L6-v2` downloads. Allow enough memory for PyTorch and the model (at least 2 GB recommended), and ensure the service can reach Hugging Face.
 
 ## Deploy the frontend to Vercel
 
