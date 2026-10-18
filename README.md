@@ -4,25 +4,18 @@ Resume Studio matches PDF, DOCX, and TXT resumes to the local job library and of
 
 ## Project structure
 
-- `backend/` — FastAPI API, resume processing, job data, and Render deployment configuration.
-- `frontend/` — static web app and its Vercel build/deployment configuration.
+- `static/` — the frontend app files.
+- `scripts/` — Vercel build script that copies the static app into `dist/`.
+- `vercel.json` — deployment settings for Vercel.
 
-The frontend and API are deployed separately. Resume text is embedded locally by the API and sent to Groq only when the user requests a review or chat reply.
-
-## Deploy the backend to Render
-
-1. In Render, create a **Blueprint** from this repository. Render reads the root [`render.yaml`](./render.yaml), which configures a native Python web service using the `backend/` directory and `/api/health` health check.
-2. Set `GROQ_API_KEY` in the service's environment settings. Keep it in Render; never put it in the frontend or commit it.
-3. Set `CORS_ORIGINS` to the exact frontend origin, for example `https://your-app.vercel.app`. Add any custom or preview origins you want to allow, separated by commas and without trailing slashes.
-
-Render installs `backend/requirements.txt` and starts Uvicorn on Render's `PORT`. The first resume analysis may take longer while `all-MiniLM-L6-v2` downloads. Allow enough memory for PyTorch and the model (at least 2 GB recommended), and ensure the service can reach Hugging Face.
+The frontend is deployed independently from the backend API. Resume text is sent to the backend for matching and AI review, and the frontend only needs the backend origin in `API_BASE_URL`.
 
 ## Deploy the frontend to Vercel
 
 1. Import this repository as a Vercel project.
-2. Set **Root Directory** to `frontend`. Only the frontend directory is used for this deployment; the Python backend and its data are outside the Vercel project root.
-3. The included `frontend/vercel.json` builds with `npm run build` and publishes `dist`.
-4. Set `API_BASE_URL` in Vercel's Production and Preview environment settings to the Render API's public origin, for example `https://your-api.onrender.com`, without `/api` or a trailing slash.
+2. Keep the **Root Directory** as the repository root (this project is already the frontend app).
+3. The included `vercel.json` runs `npm run build` and publishes `dist`.
+4. Set `API_BASE_URL` in Vercel's Production and Preview environment settings to the backend public origin, for example `https://your-api.onrender.com`, without `/api` or a trailing slash.
 
 The frontend build fails on Vercel if `API_BASE_URL` is missing or is not an HTTP(S) origin.
 
