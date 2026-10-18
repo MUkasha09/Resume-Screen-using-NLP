@@ -11,14 +11,11 @@ The frontend and API are deployed separately. Resume text is embedded locally by
 
 ## Deploy the backend to Render
 
-1. Create a Render **Web Service** for this repository and choose **Docker** as the runtime.
-2. Set **Root Directory** to `backend`. Render will build `backend/Dockerfile`.
-3. Set the health check path to `/api/health`.
-4. Add these environment variables:
-   - `GROQ_API_KEY` — your Groq key. Store it in Render's environment settings; do not put it in the frontend or commit it.
-   - `CORS_ORIGINS` — the exact Vercel site origin, for example `https://your-app.vercel.app`. Add any custom domain or preview origins you want to permit, separated by commas and without trailing slashes.
+1. In Render, create a **Blueprint** from this repository. Render reads the root [`render.yaml`](./render.yaml), which configures the `backend/` Docker service and `/api/health` health check.
+2. Set `GROQ_API_KEY` in the service's environment settings. Keep it in Render; never put it in the frontend or commit it.
+3. Set `CORS_ORIGINS` to the exact frontend origin, for example `https://your-app.vercel.app`. Add any custom or preview origins you want to allow, separated by commas and without trailing slashes.
 
-The API listens on Render's `PORT`. The first resume analysis may take longer while `all-MiniLM-L6-v2` downloads. Allow enough memory for PyTorch and the model (at least 2 GB recommended), and ensure the service can reach Hugging Face.
+The container listens on Render's `PORT`. The first resume analysis may take longer while `all-MiniLM-L6-v2` downloads. Allow enough memory for PyTorch and the model (at least 2 GB recommended), and ensure the service can reach Hugging Face.
 
 ## Deploy the frontend to Vercel
 
